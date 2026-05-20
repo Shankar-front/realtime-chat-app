@@ -1,40 +1,31 @@
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 
-const db = new sqlite3.Database(
-  "./chat.db",
-  (err) => {
+const db = new Database("chat.db");
 
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("SQLite connected");
-    }
-
-  }
-);
+console.log("SQLite connected");
 
 
 // USERS TABLE
-db.run(`
+db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password TEXT
   )
-`);
+`).run();
 
 
 // ROOMS TABLE
-db.run(`
+db.prepare(`
   CREATE TABLE IF NOT EXISTS rooms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE
   )
-`);
+`).run();
 
 
 // MESSAGES TABLE
-db.run(`
+db.prepare(`
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     roomId TEXT,
@@ -42,7 +33,7 @@ db.run(`
     message TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )
-`);
+`).run();
 
 
 module.exports = db;

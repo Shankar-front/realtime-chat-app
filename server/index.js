@@ -1,11 +1,16 @@
 require("dotenv").config();
 
 const express = require("express");
+
 const cors = require("cors");
+
 const http = require("http");
+
 const { Server } = require("socket.io");
 
-const authRoutes = require("./routes/auth");
+const authRoutes =
+  require("./routes/auth");
+
 const db = require("./db");
 
 const app = express();
@@ -23,25 +28,31 @@ app.use("/api/auth", authRoutes);
 
 // TEST ROUTE
 app.get("/", (req, res) => {
+
   res.send("Server running");
+
 });
 
 
 // CREATE HTTP SERVER
-const server = http.createServer(app);
+const server =
+  http.createServer(app);
 
 
 // SOCKET SERVER
 const io = new Server(server, {
+
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   }
+
 });
 
 
-// STORE ONLINE USERS
+// ONLINE USERS
 let onlineUsers = [];
+
 
 
 // SOCKET CONNECTION
@@ -52,28 +63,42 @@ io.on("connection", (socket) => {
 
 
   // JOIN ROOM
-  socket.on("joinRoom", ({ username, room }) => {
+  socket.on(
+    "joinRoom",
+    ({ username, room }) => {
 
-    socket.join(room);
+      socket.join(room);
 
-    // ADD USER
-    if (!onlineUsers.includes(username)) {
-      onlineUsers.push(username);
+
+      // ADD ONLINE USER
+      if (
+        !onlineUsers.includes(username)
+      ) {
+
+        onlineUsers.push(username);
+
+      }
+
+
+      // SEND ONLINE USERS
+      io.to(room).emit(
+        "onlineUsers",
+        onlineUsers
+      );
+
+
+      // SYSTEM MESSAGE
+      io.to(room).emit(
+        "message",
+        {
+          username: "System",
+          message:
+            `${username} joined ${room}`
+        }
+      );
+
     }
-
-    // SEND ONLINE USERS
-    io.to(room).emit(
-      "onlineUsers",
-      onlineUsers
-    );
-
-    // SYSTEM MESSAGE
-    io.to(room).emit("message", {
-      username: "System",
-      message: `${username} joined ${room}`
-    });
-
-  });
+  );
 
 
 
@@ -82,29 +107,26 @@ io.on("connection", (socket) => {
     "sendMessage",
     ({ room, username, message }) => {
 
-      // SAVE MESSAGE TO SQLITE
-      db.run(
-        `
+      // SAVE MESSAGE
+      db.prepare(`
         INSERT INTO messages
         (roomId, username, message)
         VALUES (?, ?, ?)
-        `,
-        [room, username, message],
-
-        (err) => {
-
-          if (err) {
-            console.log(err);
-          }
-
-        }
-      );
-
-      // SEND TO ALL USERS IN ROOM
-      io.to(room).emit("message", {
+      `).run(
+        room,
         username,
         message
-      });
+      );
+
+
+      // SEND TO ROOM
+      io.to(room).emit(
+        "message",
+        {
+          username,
+          message
+        }
+      );
 
     }
   );
@@ -129,7 +151,9 @@ io.on("connection", (socket) => {
   // DISCONNECT
   socket.on("disconnect", () => {
 
-    console.log("User disconnected");
+    console.log(
+      "User disconnected"
+    );
 
   });
 
@@ -137,9 +161,11 @@ io.on("connection", (socket) => {
 
 
 
-// START SERVER
+// PORT
 const PORT = 5000;
 
+
+// START SERVER
 server.listen(PORT, () => {
 
   console.log(
